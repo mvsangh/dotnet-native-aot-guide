@@ -18,9 +18,10 @@ Standard .NET profilers (like `dotnet-trace`) rely on the EventPipe.
 *   **Native Profilers**: Tools like `perf` (Linux) or Instruments (macOS) see the app as a standard native process, which can sometimes give *better* insight into CPU usage than managed profilers.
 
 ## Stack Traces
-By default, Native AOT includes data to generate stack traces.
-*   If you use `<StripSymbols>true</StripSymbols>`, stack traces will become unreadable (memory addresses instead of method names).
-*   **Recommendation**: Keep symbols for production logging if possible, or use symbol mapping files (though tooling for mapping back crash dumps in AOT is less mature than standard .NET).
+By default, Native AOT includes data to generate readable stack traces via the `<StackTraceSupport>true</StackTraceSupport>` property (enabled by default).
+*   If you set `<StripSymbols>true</StripSymbols>`, the **separate** symbol files (`.pdb`, `.dbg`, `.dSYM`) are not generated — but the binary itself still contains stack trace metadata unless `StackTraceSupport` is also disabled.
+*   If you disable `<StackTraceSupport>false</StackTraceSupport>`, stack traces in exceptions will show memory addresses instead of method names.
+*   **Recommendation**: Keep both defaults (`StackTraceSupport=true`, separate symbol files generated) for production. Only disable for extremely size-constrained environments.
 
 ## EventSource
 `EventSource` and `ILogger` generally work, but ensure any custom EventSource classes are not trimmed away.

@@ -3,19 +3,31 @@
 Fine-tune your Native AOT build with these MSBuild properties.
 
 ## Strip Symbols
-To significantly reduce the binary size on Linux/macOS, you can strip debugging symbols. This makes stack traces less readable but saves space.
+
+On all platforms, the AOT compiler produces debug information in **separate files** by default (`.pdb` on Windows, `.dbg` on Linux, `.dSYM` on macOS). The `StripSymbols` property controls whether these separate symbol files are generated.
 
 ```xml
 <PropertyGroup>
+  <!-- true = do not generate separate symbol files (smaller deployment, unreadable stack traces) -->
   <StripSymbols>true</StripSymbols>
 </PropertyGroup>
 ```
 
-> [!NOTE] Windows
-> On Windows, debugging information is stored in a separate `.pdb` file by default, so `StripSymbols` has less impact on the main executable size.
+To embed debug info directly **into** the native binary (larger file, but self-contained debugging):
+
+```xml
+<PropertyGroup>
+  <!-- false = include debug info in the native binary itself -->
+  <StripSymbols>false</StripSymbols>
+</PropertyGroup>
+```
+
+> [!NOTE] Default Behavior
+> When `StripSymbols` is not set, the compiler generates separate symbol files alongside the binary. This is the recommended default for most scenarios.
 
 ## Library Compatibility
-If you are building a library that is intended to be consumed by AOT apps, mark it as AOT-compatible to get compile-time warnings.
+
+If you are building a library that is intended to be consumed by AOT apps, mark it as AOT-compatible. This property was introduced in **.NET 8** and automatically enables several analyzers.
 
 ```xml
 <PropertyGroup>
@@ -23,36 +35,71 @@ If you are building a library that is intended to be consumed by AOT apps, mark 
 </PropertyGroup>
 ```
 
-### Strict Verification (.NET 10+)
-To ensure you aren't accidentally using non-compatible libraries, enable strict verification.
+Setting `IsAotCompatible=true` automatically enables:
+*   `IsTrimmable=true`
+*   `EnableTrimAnalyzer=true`
+*   `EnableSingleFileAnalyzer=true`
+*   `EnableAotAnalyzer=true`
+
+> [!NOTE] Multi-Targeting
+> If your library targets multiple frameworks, conditionally enable AOT compatibility:
+> ```xml
+> <PropertyGroup>
+>   <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
+>   <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+> </PropertyGroup>
+> ```
+
+### Strict Verification
+
+To ensure you aren't accidentally using non-compatible libraries, enable strict verification. This is available in .NET 8+ and was further improved in .NET 10 with enhanced assembly metadata.
 
 ```xml
 <PropertyGroup>
+  <IsAotCompatible>true</IsAotCompatible>
   <VerifyReferenceAotCompatibility>true</VerifyReferenceAotCompatibility>
 </PropertyGroup>
 ```
 *   **Effect**: Raises warning `IL3058` for any dependency lacking the AOT compatibility metadata.
 
 ## Optimization Preferences
+
 You can trade compilation speed for code quality/size.
 
 ```xml
 <PropertyGroup>
-  <!-- Speed up the build, but code might run slightly slower/larger -->
-  <OptimizationPreference>Speed</OptimizationPreference> 
+  <!-- Optimize for speed: faster generated code, potentially larger binary -->
+  <OptimizationPreference>Speed</OptimizationPreference>
   <!-- OR -->
-  <!-- Default: Maximum optimization (slower build) -->
+  <!-- Optimize for size: smaller binary, potentially slower generated code -->
   <OptimizationPreference>Size</OptimizationPreference>
 </PropertyGroup>
 ```
 
+## All Key MSBuild Properties
+
+| Property | Default | Purpose |
+| :--- | :--- | :--- |
+| `PublishAot` | `false` | Enable Native AOT compilation at publish time |
+| `IsAotCompatible` | `false` | Mark a library as AOT-compatible (enables analyzers) |
+| `IsTrimmable` | `false` | Mark a library as safe for trimming |
+| `EnableAotAnalyzer` | `false` | Enable the AOT compatibility Roslyn analyzer |
+| `VerifyReferenceAotCompatibility` | `false` | Warn on references lacking AOT metadata |
+| `StripSymbols` | (platform default) | Control debug symbol generation |
+| `OptimizationPreference` | (balanced) | `Speed` or `Size` optimization trade-off |
+| `InvariantGlobalization` | `false` | Disable ICU for culture-invariant apps (~1MB saving) |
+| `StackTraceSupport` | `true` | Include stack trace metadata in the binary |
+
 ## Static Linking (Linux)
-By default, Native AOT links dynamically against `libc`. You can attempt static linking for a truly portable binary (Distroless), specifically using `musl` libc (e.g., Alpine Linux).
+
+By default, Native AOT links dynamically against `libc`. You can produce a statically-linked binary using `musl` libc (e.g., Alpine Linux) for truly portable binaries.
 
 ```bash
 # Requires Alpine or a musl-based environment
 dotnet publish -r linux-musl-x64
 ```
+
+This produces a binary with no dynamic library dependencies, suitable for distroless or scratch containers.
 
 ---
 Next: [[Reflection and Dynamic Code]]

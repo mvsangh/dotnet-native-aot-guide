@@ -41,11 +41,17 @@ string json = JsonSerializer.Serialize(weather, SourceGenerationContext.Default.
 var parsed = JsonSerializer.Deserialize(json, SourceGenerationContext.Default.WeatherForecast);
 ```
 
+## Entity Framework Core
+
+> [!WARNING] EF Core Not Supported
+> Entity Framework Core does **not** support Native AOT publishing. If your application requires database access, use raw ADO.NET libraries such as `Microsoft.Data.SqlClient`, `Npgsql`, or `MySqlConnector`. These libraries work with AOT because they don't rely on expression tree compilation or dynamic proxy generation.
+
 ## Limitations of Source Generation
 Even with the generator, some patterns are unsupported:
 *   **Anonymous Types**: You cannot put `[JsonSerializable]` on an anonymous type.
 *   **`dynamic`**: Not supported.
 *   **Missing Constructors**: The target type must have a public parameterless constructor or be a record with a supported parameterized constructor.
+*   **Unbounded type graphs**: Walking arbitrary type hierarchies via reflection-based serialization is not supported. All types must be explicitly registered.
 
 > [!TIP]
 > Always enable `IsAotCompatible` in your project to get warnings if you accidentally use a reflection-based overload of `JsonSerializer.Serialize`.

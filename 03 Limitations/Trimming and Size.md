@@ -15,8 +15,10 @@ Dynamic loading of assemblies is **not supported**. The trimmer cannot see into 
 *   **Impact**: Plugin architectures based on dropping DLLs into a folder will not work.
 *   **Alternative**: Plugins must be statically referenced and compiled into the app, or you must use a different architecture (e.g., separate processes communicating via gRPC).
 
-### Generics
-When you use `List<int>`, the compiler generates specific native code for `int`. If you use `List<T>` via reflection where `T` is determined at runtime, the compiler might not have generated the necessary native code for that specific `T`.
+### Generics and Value Types
+When you use `List<int>`, the compiler generates specific native code for `int`. Each unique **value-type** generic instantiation (e.g., `List<int>`, `List<double>`, `Dictionary<int, long>`) produces its own native code, which can increase binary size. Reference-type generics (e.g., `List<string>`, `List<object>`) share a single code path.
+
+If you use `List<T>` via reflection where `T` is determined at runtime, the compiler might not have generated the necessary native code for that specific `T`, leading to a runtime failure.
 
 ## Managing Warnings
 You will see warnings like **`IL2026`** or **`IL2091`**. **Do not ignore these.** They indicate a potential runtime crash.

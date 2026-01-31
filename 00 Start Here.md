@@ -22,7 +22,7 @@ Welcome to the comprehensive guide for **.NET Native AOT**. This vault covers im
 * [[Platform and Architecture]] - OS constraints and cross-compilation rules.
 
 ### 04 Advanced
-* [[NET 10 New Features]] - **NEW**: `IsAotCompatible` metadata and .NET 10 specific improvements.
+* [[NET 10 New Features]] - Version history (.NET 7-10), dotnet tools as AOT, and .NET 10 improvements.
 * [[Diagnostics]] - Debugging, profiling, and observability in a native environment.
 
 ### Appendix
